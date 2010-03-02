@@ -862,7 +862,7 @@ sub build_stuff {
             'DateTime'         => '--pp',
         };
         my $opts = $self->{no_xs} ? $noxs_opt_map->{$module} : '';
-        if ($self->configure("$self->{perl} Build.PL")) {
+        if ($self->configure("$self->{perl} Build.PL $opts")) {
             $configured_ok = -e 'Build' && -f _;
         }
         $use_module_build++;
