@@ -81,6 +81,7 @@ sub parse_options {
         'self-upgrade' => sub { $self->{cmd} = 'install'; push @ARGV, 'App::cpanminus' },
         'disable-plugins' => \$self->{disable_plugins},
         'no-lwp'    => \$self->{no_lwp},
+        'no-xs'     => \$self->{no_xs},
     );
 
     $self->{argv} = \@ARGV;
@@ -842,7 +843,16 @@ sub build_stuff {
         # with 0 even if header files are missing, to avoid receiving
         # tons of FAIL reports in such cases. So exit code can't be
         # trusted if it went well.
-        if ($self->configure("$self->{perl} Makefile.PL")) {
+        my $noxs_opt_map = {
+            'version'          => '--perl_only',
+            'List::MoreUtils'  => '-pm',
+            'Params::Validate' => '--pp',
+            'Params::Util'     => '-pm',
+            'DateTime'         => '--pp',
+            'Mouse'            => '--pp',
+        };
+        my $opts = $self->{no_xs} ? $noxs_opt_map->{$module} : '';
+        if ($self->configure("$self->{perl} Makefile.PL $opts")) {
             $configured_ok = -e 'Makefile';
         }
         $configured++;
