@@ -846,9 +846,7 @@ sub build_stuff {
         my $noxs_opt_map = {
             'version'          => '--perl_only',
             'List::MoreUtils'  => '-pm',
-            'Params::Validate' => '--pp',
             'Params::Util'     => '-pm',
-            'DateTime'         => '--pp',
             'Mouse'            => '--pp',
         };
         my $opts = $self->{no_xs} ? $noxs_opt_map->{$module} : '';
@@ -859,6 +857,11 @@ sub build_stuff {
     }
 
     if ((!$self->{make} or !$configured_ok) and -e 'Build.PL') {
+        my $noxs_opt_map = {
+            'Params::Validate' => '--pp',
+            'DateTime'         => '--pp',
+        };
+        my $opts = $self->{no_xs} ? $noxs_opt_map->{$module} : '';
         if ($self->configure("$self->{perl} Build.PL")) {
             $configured_ok = -e 'Build' && -f _;
         }

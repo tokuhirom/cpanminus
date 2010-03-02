@@ -848,7 +848,10 @@ sub build_stuff {
         # tons of FAIL reports in such cases. So exit code can't be
         # trusted if it went well.
         my $noxs_opt_map = {
-            'Params::Util' => '-pm',
+            'version'          => '--perl_only',
+            'List::MoreUtils'  => '-pm',
+            'Params::Util'     => '-pm',
+            'Mouse'            => '--pp',
         };
         my $opts = $self->{no_xs} ? $noxs_opt_map->{$module} : '';
         if ($self->configure("$self->{perl} Makefile.PL $opts")) {
@@ -858,6 +861,11 @@ sub build_stuff {
     }
 
     if ((!$self->{make} or !$configured_ok) and -e 'Build.PL') {
+        my $noxs_opt_map = {
+            'Params::Validate' => '--pp',
+            'DateTime'         => '--pp',
+        };
+        my $opts = $self->{no_xs} ? $noxs_opt_map->{$module} : '';
         if ($self->configure("$self->{perl} Build.PL")) {
             $configured_ok = -e 'Build' && -f _;
         }
