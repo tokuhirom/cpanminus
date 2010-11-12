@@ -358,6 +358,7 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
           interactive => undef,
           log => undef,
           mirrors => [],
+          minicpan => undef,
           perl => $^X,
           argv => [],
           local_lib => undef,
@@ -403,6 +404,7 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
           'l|local-lib=s' => sub { $self->{local_lib} = $self->maybe_abs($_[1]) },
           'L|local-lib-contained=s' => sub { $self->{local_lib} = $self->maybe_abs($_[1]); $self->{self_contained} = 1 },
           'mirror=s@' => $self->{mirrors},
+          'minicpan=s' => sub { unshift @{$self->{mirrors}}, "file://" . $self->maybe_abs($_[1]); $self->{minicpan} = $_[1] },
           'prompt!'   => \$self->{prompt},
           'installdeps' => \$self->{installdeps},
           'skip-installed!' => \$self->{skip_installed},
@@ -511,6 +513,21 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
       $html =~ m!<a href="/CPAN/authors/id/(.*?\.(?:tar\.gz|tgz|tar\.bz2|zip))">!
           and return $self->cpan_module($module, $1);
   
+      if ($self->{minicpan}) {
+          $self->chat("Searching $module on minicpan($self->{minicpan}) ...\n");
+          my $path = File::Spec->catfile($self->{minicpan}, 'modules', '02packages.details.txt.gz');
+          eval "require IO::Zlib; 1" or die "IO::Zlib is required for minicpan support";
+          my $fh = IO::Zlib->new($path, 'rb');
+          while (<$fh>) { # skip headers
+              last unless /\S/;
+          }
+          while (<$fh>) {
+              if (/^\Q$module\E\s+\S+\s+(\S+)$/) {
+                  return $self->cpan_module($module, $1);
+              }
+          }
+      }
+  
       $self->diag_fail("Finding $module on search.cpan.org failed.");
   
       return;
@@ -560,6 +577,7 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
     --installdeps             Only install dependencies
     --reinstall               Reinstall the distribution even if you already have the latest version installed
     --mirror                  Specify the base URL for the mirror (e.g. http://cpan.cpantesters.org/)
+    --minicpan                Specify the local minicpan the mirror (e.g. /path/to/minicpan)
     --prompt                  Prompt when configure/build/test fails
     -l,--local-lib            Specify the install base to install modules
     -L,--local-lib-contained  Specify the install base to install all non-core modules
@@ -581,6 +599,7 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
     cpanm --installdeps .                                     # install all the deps for the current directory
     cpanm -L extlib Plack                                     # install Plack and all non-core deps into extlib
     cpanm --mirror http://cpan.cpantesters.org/ DBI           # use the fast-syncing mirror
+    cpanm --minicpan /path/to/minicpan DBI                    # use the local minicpan mirror
   
   You can also specify the default options in PERL_CPANM_OPT environment variable in the shell rc:
   
